@@ -158,4 +158,13 @@ public class APIService {
 				apiId);
 	}
 
+	public void checkQuotaNBLimit(String serviceProvider, String application, String apiName, String operatorName)throws Exception{
+
+		try {
+			apiDAO.checkQuotaLimit(serviceProvider, application, apiName, operatorName);
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
 }

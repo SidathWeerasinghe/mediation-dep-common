@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import com.wso2telco.core.dbutils.DbUtils;
 import com.wso2telco.core.dbutils.util.DataSourceNames;
+import com.wso2telco.dep.common.mediation.quota.limit.QuotaLimits;
 import com.wso2telco.dep.common.mediation.util.DatabaseTables;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -507,4 +508,159 @@ public class APIDAO {
 
 		return false;
 	}
+
+	public void checkQuotaLimit(String serviceProvider, String application, String apiName, String operatorName) {
+
+		QuotaLimits quotaLimits = QuotaLimits.getQuotaLimitsObj();
+
+		if (serviceProvider != null) {
+
+			spLimit(serviceProvider, operatorName, quotaLimits);
+		}
+
+		if (serviceProvider != null && application != null) {
+
+			applicationLimit(serviceProvider, application, operatorName, quotaLimits);
+		}
+
+		if (serviceProvider != null && application != null && apiName != null) {
+
+			apiLimit(serviceProvider, application, apiName, operatorName, quotaLimits);
+		}
+
+	}
+
+	private void apiLimit(String serviceProvider, String application, String apiName, String operatorName, QuotaLimits quotaLimits) {
+		Connection connection = null;
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+
+		try {
+			connection = DbUtils.getDbConnection(DataSourceNames.WSO2TELCO_DEP_DB);
+			StringBuilder queryBuilder = new StringBuilder();
+
+			queryBuilder.append("SELECT limit FROM " + DatabaseTables.SP_QUOTA_LIMIT + "  WHERE serviceProvider = ? AND application = ? AND apiName = ?");
+
+			if (operatorName != null) {
+
+				queryBuilder.append(" AND  operatorName = ?");
+
+			} else {
+
+				queryBuilder.append(" AND  operatorName = null");
+			}
+
+			preparedStatement = connection.prepareStatement(queryBuilder.toString());
+			preparedStatement.setString(1, serviceProvider.toLowerCase());
+			preparedStatement.setString(2, application.toLowerCase());
+			preparedStatement.setString(3, apiName.toLowerCase());
+
+			if (operatorName != null) {
+
+				preparedStatement.setString(3, operatorName.toLowerCase());
+			}
+
+			resultSet = preparedStatement.executeQuery();
+
+			while (resultSet.next()) {
+				quotaLimits.setApiLimit(Integer.parseInt(resultSet.getString("limit")));
+			}
+		} catch (Exception e) {
+			log.error("Error occurred while retrieving quota limit in API :", e);
+
+		} finally {
+
+			DbUtils.closeAllConnections(preparedStatement, connection, resultSet);
+		}
+	}
+
+	private void applicationLimit(String serviceProvider, String application, String operatorName, QuotaLimits quotaLimits) {
+		Connection connection = null;
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+
+		try {
+			connection = DbUtils.getDbConnection(DataSourceNames.WSO2TELCO_DEP_DB);
+			StringBuilder queryBuilder = new StringBuilder();
+
+			queryBuilder.append("SELECT limit FROM " + DatabaseTables.SP_QUOTA_LIMIT + "  WHERE serviceProvider = ? AND application = ?");
+
+			if (operatorName != null) {
+
+				queryBuilder.append(" AND  operatorName = ?");
+
+			} else {
+
+				queryBuilder.append(" AND  operatorName = null");
+			}
+
+			queryBuilder.append(" AND apiName = null ");
+
+			preparedStatement = connection.prepareStatement(queryBuilder.toString());
+			preparedStatement.setString(1, serviceProvider.toLowerCase());
+			preparedStatement.setString(2, application.toLowerCase());
+
+			if (operatorName != null) {
+
+				preparedStatement.setString(3, operatorName.toLowerCase());
+			}
+
+			resultSet = preparedStatement.executeQuery();
+
+			while (resultSet.next()) {
+				quotaLimits.setAppLimit(Integer.parseInt(resultSet.getString("limit")));
+			}
+		} catch (Exception e) {
+			log.error("Error occurred while retrieving quota limit in APP :", e);
+
+		} finally {
+
+			DbUtils.closeAllConnections(preparedStatement, connection, resultSet);
+		}
+	}
+
+	private void spLimit(String serviceProvider, String operatorName, QuotaLimits quotaLimits) {
+		Connection connection = null;
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+
+		try {
+			connection = DbUtils.getDbConnection(DataSourceNames.WSO2TELCO_DEP_DB);
+			StringBuilder queryBuilder = new StringBuilder();
+
+			queryBuilder.append("SELECT limit FROM " + DatabaseTables.SP_QUOTA_LIMIT + "  WHERE serviceProvider = ?");
+
+			if (operatorName != null) {
+
+				queryBuilder.append(" AND  operatorName = ?");
+
+			} else {
+
+				queryBuilder.append(" AND  operatorName = null");
+			}
+
+			queryBuilder.append(" AND application = null AND apiName = null ");
+
+			preparedStatement = connection.prepareStatement(queryBuilder.toString());
+			preparedStatement.setString(1, serviceProvider.toLowerCase());
+
+			if (operatorName != null) {
+
+				preparedStatement.setString(2, operatorName.toLowerCase());
+			}
+
+			resultSet = preparedStatement.executeQuery();
+
+			while (resultSet.next()) {
+				quotaLimits.setSpLimit(Integer.parseInt(resultSet.getString("limit")));
+			}
+		} catch (Exception e) {
+			log.error("Error occurred while retrieving quota limit in SP :", e);
+
+		} finally {
+
+			DbUtils.closeAllConnections(preparedStatement, connection, resultSet);
+		}
+	}
+
 }
