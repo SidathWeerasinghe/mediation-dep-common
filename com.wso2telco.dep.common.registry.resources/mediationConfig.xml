@@ -16,4 +16,5 @@
 	<validationConfig>
 		<requestIdentifierLength>6</requestIdentifierLength>
 	</validationConfig>
+	<spend_limit_enabled>true</spend_limit_enabled>
 </mediationConfig>
