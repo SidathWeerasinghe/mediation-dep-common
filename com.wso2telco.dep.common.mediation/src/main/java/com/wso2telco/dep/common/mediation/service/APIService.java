@@ -3,7 +3,11 @@ package com.wso2telco.dep.common.mediation.service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.wso2telco.dep.common.mediation.spendlimit.entities.MessageDTO;
+import com.wso2telco.dep.common.mediation.spendlimit.entities.SpendChargeDTO;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -162,4 +166,17 @@ public class APIService {
 	public int executeCustomInsertQueryAndGetGeneratedPrimaryKey (String insertQuery) throws Exception {
 		return apiDAO.executeCustomInsertQueryAndGetGeneratedPrimaryKey(insertQuery);
 	}
+
+	public void publishMessage(final MessageDTO messageDTO) throws Exception {
+		apiDAO.publishMessage(messageDTO);
+	}
+
+	public void persistSpendDate(final SpendChargeDTO spendChargeDTO) throws Exception {
+		apiDAO.persistSpendCharge(spendChargeDTO);
+	}
+
+	public String getRefundDetails(int messageDid, String orginalServerReferanceCode) throws Exception {
+		return apiDAO.getRefundDetails(messageDid, orginalServerReferanceCode);
+	}
+
 }
