@@ -35,7 +35,7 @@ public class RedisCacheAccessMediator extends AbstractMediator {
     // Default ttl value is set to 6 hours for all operators
     private final int DEFAULT_TTL = 21600;
 
-    int operation = -1;
+    private int operation = -1;
 
     public String getAction() { return null; }
 
@@ -81,7 +81,7 @@ public class RedisCacheAccessMediator extends AbstractMediator {
 
                 int hitCount = 1;
                 int fraudTtl = getValidTtl(messageContext.getProperty("fraudTtl").toString());
-
+                try {
                 String existingValue = RedisClient.getKey("fraud-" + msisdn);
 
                 if (null != existingValue) {
@@ -92,7 +92,6 @@ public class RedisCacheAccessMediator extends AbstractMediator {
                     }
                 }
 
-                try {
                     RedisClient.setKey("fraud-" + msisdn, String.valueOf(hitCount), fraudTtl);
                 } catch (Exception ex) {
                     log.error("Error while setting key:" + ex.getMessage());

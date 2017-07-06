@@ -34,8 +34,7 @@ public class GroupEventUnmarshaller {
     Unmarshaller jaxbUnmarshaller;
     private Map<String, Set<GroupDTO>> consumerKeyVsGroup = new HashMap<String, Set<GroupDTO>>();
     private Map<String, Set<ServiceProviderDTO>> consumerKeyVsSp = new HashMap<String, Set<ServiceProviderDTO>>();
-    private Map<String, GroupDTO> operatorGP = new HashMap<String, GroupDTO>();
-
+    private Map<String ,  ArrayList<GroupDTO>> oparatorGP = new HashMap<String,  ArrayList<GroupDTO>>();
 
     private GroupEventUnmarshaller(String xml) throws JAXBException {
         unmarshall(xml);
@@ -57,25 +56,26 @@ public class GroupEventUnmarshaller {
         jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         GroupList groupList = (GroupList) jaxbUnmarshaller.unmarshal(input);
 
-        for (Iterator iterator = groupList.getGroupList().iterator(); iterator.hasNext(); ) {
-            Group group = (Group) iterator.next();
+        for (Group group : groupList.getGroupList()) {
             GroupDTO gpDTO = new GroupDTO();
 
             gpDTO.setPrepaid(group.getPrepaid());
-
             gpDTO.setGroupName(group.getGroupName());
-
             gpDTO.setPostpaid(group.getPostpaid());
-
             gpDTO.setOperator(group.getOperator());
             gpDTO.setCustomerInfoEnabled(group.getCustomerInfoEnabled());
 
-            operatorGP.put(group.getOperator(), gpDTO);
+            if (oparatorGP.containsKey(group.getOperator())) {
+                oparatorGP.get(group.getOperator()).add(gpDTO);
+            } else {
+                ArrayList<GroupDTO> groupArrayList = new ArrayList<GroupDTO>();
+                groupArrayList.add(gpDTO);
+                oparatorGP.put(group.getOperator(), groupArrayList);
+            }
 
             for (ServiceProvider sp : group.getServiceProviderList()) {
                 ServiceProviderDTO serviceProviderDTO = new ServiceProviderDTO();
                 serviceProviderDTO.setSpName(sp.getSpName());
-
 
                 for (Application app : sp.getApplicationList()) {
                     serviceProviderDTO.getApplicationList().add(app);
@@ -94,74 +94,74 @@ public class GroupEventUnmarshaller {
                         spStack.add(serviceProviderDTO);
                         consumerKeyVsSp.put(app.getConsumerKey(), spStack);
                     }
-
-
                 }
                 gpDTO.getServiceProviderList().add(serviceProviderDTO);
             }
         }
     }
 
-    public ConsumerSecretWrapperDTO getGroupEventDetailDTO(final String consumerKey) throws Exception {
-        if (consumerKey == null || consumerKey.trim().length() <= 0) {
+    public ConsumerSecretWrapperDTO getGroupEventDetailDTO(final String consumerKey) throws Exception{
+        if(consumerKey==null|| consumerKey.trim().length()<=0){
             throw new Exception("Invalid consumerKey");
         }
         ConsumerSecretWrapperDTO dto = new ConsumerSecretWrapperDTO();
 
         dto.setConsumerKey(consumerKey.trim());
-
-        if (consumerKeyVsGroup.get(consumerKey.trim()) != null) {
-            dto.setConsumerKeyVsSp(new ArrayList<ServiceProviderDTO>(consumerKeyVsSp.get(consumerKey.trim())));
+        if(consumerKeyVsGroup.get(consumerKey.trim()) != null){
+            dto.setConsumerKeyVsSp(new ArrayList<ServiceProviderDTO>(consumerKeyVsSp.get(consumerKey.trim() )));
         }
-        if (consumerKeyVsGroup.get(consumerKey.trim()) != null) {
-            dto.setConsumerKeyVsGroup(new ArrayList<GroupDTO>(consumerKeyVsGroup.get(consumerKey.trim())));
+        if( consumerKeyVsGroup.get(consumerKey.trim())!=null){
+            dto.setConsumerKeyVsGroup(new ArrayList<GroupDTO>(consumerKeyVsGroup.get(consumerKey.trim()) ));
         }
-        return dto;
+        return  dto;
     }
+    public GroupDTO getGroupDTO(final String oparator, final String consumerKey) throws OperatorNotInListException {
 
-    public GroupDTO getGroupDTO(final String operator, final String consumerKey) throws OperatorNotInListException {
-
-        if (operator == null || operator.trim().length() <= 0) {
+        if (oparator == null || oparator.trim().length() <= 0) {
             throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.INVALID_OPERATOR_ID);
         }
         if (consumerKey == null || consumerKey.trim().length() <= 0) {
             throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.INVALID_CONSUMER_KEY);
         }
 
-        if (!operatorGP.containsKey(operator.trim())) {
+        if (!oparatorGP.containsKey(oparator.trim())) {
             throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.OPERATOR_NOT_DEFINED);
         }
 
-        GroupDTO groupDTO = operatorGP.get(operator.trim());
+        ArrayList<GroupDTO> groupDTOList = oparatorGP.get(oparator.trim());
 
-        if (groupDTO.getServiceProviderList() == null || groupDTO.getServiceProviderList().isEmpty()) {
-            throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.NO_SP_DEFINED);
-        }
+        for (GroupDTO groupDTO : groupDTOList) {
 
-        for (ServiceProviderDTO sp : groupDTO.getServiceProviderList()) {
-
-            if (sp.getApplicationList() == null || sp.getApplicationList().isEmpty()) {
-                throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.APPS_NOT_DEFIED);
+            // check for empty sp list
+            if (groupDTO.getServiceProviderList() == null || groupDTO.getServiceProviderList().isEmpty()) {
+                throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.NO_SP_DEFINED);
             }
 
-            for (Application app : sp.getApplicationList()) {
-                if (app.getConsumerKey().equalsIgnoreCase(consumerKey.trim())) {
+            for (ServiceProviderDTO sp : groupDTO.getServiceProviderList()) {
 
-
-                    ServiceProviderDTO retunSP = sp.clone();
-                    retunSP.getApplicationList().add(app.clone());
-
-                    GroupDTO returnDTOGP = groupDTO.clone();
-
-                    returnDTOGP.getServiceProviderList().add(retunSP);
-                    return returnDTOGP;
-
+                // checks for empty application list
+                if (sp.getApplicationList() == null || sp.getApplicationList().isEmpty()) {
+                    throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.APPS_NOT_DEFIED);
                 }
-            }
 
+                for (Application app : sp.getApplicationList()) {
+                    if (app.getConsumerKey().equalsIgnoreCase(consumerKey.trim())) {
+
+
+                        ServiceProviderDTO retunSP = sp.clone();
+                        retunSP.getApplicationList().add(app.clone());
+
+                        GroupDTO returnDTOGP = groupDTO.clone();
+
+                        returnDTOGP.getServiceProviderList().add(retunSP);
+                        return returnDTOGP;
+
+                    }
+                }
+
+            }
         }
         throw new OperatorNotInListException(OperatorNotInListException.ErrorHolder.OPERATOR_NOT_DEFINED);
-
 
     }
 

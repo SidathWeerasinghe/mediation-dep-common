@@ -66,25 +66,34 @@ public class CheckLimitMediator extends AbstractMediator {
         return true;
     }
 
+    @SuppressWarnings("Since15")
     public boolean checkSpendLimit(String msisdn, String operator, Double chargeAmount, String consumerKey,
                                    MessageContext mc)
             throws DBUtilException {
         try {
             GroupDTO groupDTO = groupEventUnmarshaller.getGroupDTO(operator, consumerKey);
 
-            Double groupdailyLimit = null;
-            Double groupMonlthlyLimit = null;
+            double groupdailyLimit = 0;
+            double groupMonlthlyLimit = 0;
 
             if(mc.getProperty("userpackagetype").toString().toLowerCase().equals("prepaid")){
 
-                groupdailyLimit = Double.parseDouble(groupDTO.getPrepaid().getDayAmount());
-                groupMonlthlyLimit = Double.parseDouble(groupDTO.getPrepaid().getMonthAmount());
+                if(!((groupDTO.getPrepaid().getDayAmount()).isEmpty())) {
+                    groupdailyLimit = Double.parseDouble(groupDTO.getPrepaid().getDayAmount());
+                }
+                if(!((groupDTO.getPrepaid().getMonthAmount()).isEmpty())) {
+                    groupMonlthlyLimit = Double.parseDouble(groupDTO.getPrepaid().getMonthAmount());
+                }
             }
 
             if(mc.getProperty("userpackagetype").toString().toLowerCase().equals("postpaid")){
 
-                groupdailyLimit = Double.parseDouble(groupDTO.getPostpaid().getDayAmount());
-                groupMonlthlyLimit = Double.parseDouble(groupDTO.getPostpaid().getMonthAmount());
+                if(!((groupDTO.getPostpaid().getDayAmount()).isEmpty())) {
+                    groupdailyLimit = Double.parseDouble(groupDTO.getPostpaid().getDayAmount());
+                }
+                if(!((groupDTO.getPostpaid().getMonthAmount()).isEmpty())) {
+                    groupMonlthlyLimit = Double.parseDouble(groupDTO.getPostpaid().getMonthAmount());
+                }
             }
 
 

@@ -19,11 +19,9 @@
 package com.wso2telco.dep.common.mediation.spendlimit;
 
 
-import com.wso2telco.dep.common.mediation.spendlimit.messageenum.DataPublisherConstants;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
-import org.json.JSONException;
-import org.json.JSONObject;
+
 
 import java.util.UUID;
 
@@ -50,44 +48,4 @@ public class AuthorizeRequestHandlerMediator extends AbstractMediator {
 
         return true;
     }
-
-
-    /**
-     * Publish request data.
-     *
-     * @param operator
-     *            the operator
-     * @param url
-     *            the url
-     * @param requestStr
-     *            the request str
-     * @param messageContext
-     *            the message context
-     */
-    private void publishRequestData(String operator, String url, String requestStr,
-            MessageContext messageContext) {
-        // set properties for request data publisher
-        messageContext.setProperty(DataPublisherConstants.OPERATOR_ID, operator);
-        messageContext.setProperty(DataPublisherConstants.SB_ENDPOINT, url);
-
-        if (requestStr != null) {
-            // get chargeAmount property for payment API request
-            JSONObject paymentReq = null;
-            try {
-                paymentReq = new JSONObject(requestStr).optJSONObject("amountTransaction");
-                if (paymentReq != null) {
-                    String chargeAmount = paymentReq.getJSONObject("paymentAmount").getJSONObject("chargingInformation")
-                            .optString("amount");
-                    messageContext.setProperty(DataPublisherConstants.CHARGE_AMOUNT, chargeAmount);
-                    String payCategory = paymentReq.getJSONObject("paymentAmount").getJSONObject("chargingMetaData")
-                            .optString("purchaseCategoryCode");
-                    messageContext.setProperty(DataPublisherConstants.PAY_CATEGORY, payCategory);
-                }
-            } catch (JSONException e) {
-                log.error("Error in converting request to json. " + e.getMessage(), e);
-            }
-        }
-
-    }
-
 }

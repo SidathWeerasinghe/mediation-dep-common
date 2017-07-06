@@ -68,7 +68,7 @@ abstract class AbstractPublisher implements Publishable {
                 spendChargeDTO.setMsisdn((String)messageContext.getProperty("MSISDN"));
                 spendChargeDTO.setCurrentTime(currentTime);
 
-             //   if(!messageContext.getPropertyKeySet().contains("userpackagetype")||messageContext.getProperty("userpackagetype").toString().toLowerCase().equals("postpaid")) {
+               if(spendLimitApplicable(messageContext,groupDTO)) {
 
                     if (orginalPaymentTime > 0 && (MessageType.REFUND_RESPONSE.getMessageDid() == (Integer) messageContext.getProperty(DataPublisherConstants.PAYMENT_TYPE))) {
                         spendChargeDTO.setOrginalTime(orginalPaymentTime);
@@ -84,13 +84,34 @@ abstract class AbstractPublisher implements Publishable {
                     apiService.persistSpendDate(spendChargeDTO);
                     //eventsPublisherClient.publishEvent(messageContext);
                 }
-           // }
+            }
 
         } catch (OperatorNotInListException e){
             LOG.debug("NOt publish to database");
         }
 
 
+    }
+
+    @SuppressWarnings("Since15")
+    private boolean spendLimitApplicable(MessageContext messageContext, GroupDTO groupDTO){
+
+        String userPacakge = messageContext.getProperty("userpackagetype").toString().toLowerCase();
+
+        if(userPacakge.equals("prepaid")) {
+            if (groupDTO.getPrepaid().getDayAmount().isEmpty() || groupDTO.getPrepaid().getMonthAmount().isEmpty()) {
+
+                return false;
+            }
+        }
+        if(userPacakge.equals("postpaid")){
+            if(groupDTO.getPostpaid().getDayAmount().isEmpty() || groupDTO.getPostpaid().getMonthAmount().isEmpty()){
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     abstract protected MessageContext modifyMessageContext(MessageContext messageContext,
